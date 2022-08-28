@@ -12,31 +12,52 @@ from selenium.webdriver.common.by import By
 import requests
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.action_chains import ActionChains
+import sqlite3
 import os, sys
+#import ipdb
 
 app = Flask(__name__)
 
 
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-
+#ipdb.set_trace()
 lst2 = []
 phone_number = 577371155
 #name = 'Giorgi'
 usernameStr = 'Primesellersglobal@gmail.com'
 passwordStr = 'Pride123'
+
+#usernameStr = 'giorgi.g@list.ru'
+#passwordStr = '.6LzTtVri3!WNQ8'
+
 #WEBSITE_URL = 'https://www.myhome.ge/ka/pr/11870912/1817709/qiravdeba-axali-ashenebuli-bina-krwanisshi-krwanisi-3-oTaxiani'
 
 def get_content():
-    """returns content from certain page"""
-    WEBSITE_URL = str(session['url'])
-    response = requests.get(WEBSITE_URL)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+        cursor = connection.cursor()
+        query1 = "SELECT * from Phonebookk"
+        result = cursor.execute(query1)
+        result = result.fetchall()
+        """returns content from certain page"""
+        WEBSITE_URL = result[0][0]
+    except:
+        return 0
+        #WEBSITE_URL = 'https://www.myhome.ge/ka/pr/12909566/qiravdeba-axali-ashenebuli-bina-saburTaloze-g.-kartozias-qucha-2-oTaxiani'
+        #'https://www.myhome.ge/ka/pr/12935449/qiravdeba-axali-ashenebuli-bina-saburTaloze-m.-aleqsiZis-qucha'
+        #'https://www.myhome.ge/ka/pr/12909566/qiravdeba-axali-ashenebuli-bina-saburTaloze-g.-kartozias-qucha-2-oTaxiani'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}
+    try:
+        response = requests.get(WEBSITE_URL, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+    except:
+        soup = 0
     return soup
-
 
 def find_pictures_hrefs(content):
     gird = content.select('div.swiper-wrapper')[0].contents
+
     lst=[]
     for x in gird:
         try:
@@ -45,6 +66,7 @@ def find_pictures_hrefs(content):
         except:
             pass
     return lst
+
 
 #!!!!!!!@@@@@@@@  NEED TO CHANGE FOTOS VAR @@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!
 def string():
@@ -78,44 +100,79 @@ def save_pictures():
 
 
 def get_needed_info():
-    save_pictures()
     content = get_content()
+    if content == 0:
+        return 0
+    else:
+        pass
+    save_pictures()
     #"""returns needed info from certain page"""
     addresss = content.select('div.statement-title > span.address')[0].text
     address = addresss[7:-6].split('თბილისი')[0][0:-2]
     details = content.select('div.main-features.row.no-gutters > div.col-6.col-lg-4.mb-0.mb-md-4.mb-lg-0.d-flex.align-items-center.mb-lg-0.mb-4.pr-2.pr-lg-0')
-    #''' binis farti'''
-    needed_details = int(details[0].contents[1].contents[0].text.split('.')[0])
+    ''' binis farti'''
+    needed_details = ''
+    teqstii = (details[0].contents[1].contents[0].text)
+    for i in teqstii:
+        if i == '.':
+            break
+        try:
+            needed_details += str(int(i))
+        except:
+            pass
+    needed_details = int(needed_details)
+    #needed_details = int(details[0].contents[1].contents[0].text.split('.')[0])
     #'''otaxebis raodenoba'''
-    otaxi = int(details[0].contents[1].contents[1].text.split(' ')[0])
+    #otaxi = int(details[0].contents[1].contents[1].text.split(' ')[0])
+    otaxi = ''
+    teqstii = details[0].contents[1].contents[1].text
+    for i in teqstii:
+        try:
+            otaxi += str(int(i))
+        except:
+            pass
+    otaxi = int(otaxi)
     #'''sartulebis raodenoba da chveni sartuli'''
-    sartulebi = details[2].contents[1].contents[0].text
-    current_floor = int(sartulebi.split('/')[0])
-    total_floors = int(sartulebi.split('/')[1])
+    total_floors = ''
+    teqstii = details[2].contents[1].contents[0].text.split('/')[1]
+
+    for i in teqstii:
+        try:
+            total_floors += str(int(i))
+        except:
+            pass
+    total_floors = int(total_floors)
+    current_floor = ''
+    teqstii = details[2].contents[1].contents[0].text.split('/')[0]
+    for i in teqstii:
+        try:
+            current_floor += str(int(i))
+        except:
+            pass
+    current_floor = int(current_floor)
+
 
     #print(address)
-    try:
-        price = content.select('div.price-toggler-wrapper > div.d-flex.mb-2.align-items-center.justify-content-between')[0].contents[0].text.strip()
+    price = ''
+    teqstii = content.select('div.price-toggler-wrapper > div.d-flex.mb-2.align-items-center.justify-content-between')[0].contents[0].contents[0].text
+    for i in teqstii:
         try:
-            frice = int(price.split(',')[0]+price.split(',')[1])
+            price += str(int(i))
         except:
-            try:
-                frice = int(price)
-            except:
-                logging.info('2 much big %s', price)
-    except ValueError:
-        logging.info('Invalid path to %s', price)
-    buxari = content.select('div.amenities > div.row > div.col-6')[1]
-    classname = str(buxari.contents[1].contents[3])
-    clearclassname = classname.split('class')[2].split('>')[0].split('"')[1]
+            pass
+    price = int(price)
+    #buxari = content.select('div.amenities > div.row > div.col-6')[1]
+    #classname = str(buxari.contents[1].contents[3])
+    #clearclassname = classname.split('class')[2].split('>')[0].split('"')[1]
+    #yvelaferi_buxartan_ertad = content.select('div.amenities > div.row > div.col-6')[1].contents[3].contents[3].contents
     #'''კომენტარი'''
     try:
         comment = content.select('div.description > div > div.shortened > p.pr-comment.translated')[0].text
     except:
         comment = ' '
 #    '''sivrce'''
-    sivrce = content.select('div.amenities > div.row > div.col-6')[0].contents[1].contents
-    ketilmowyoba = content.select('div.amenities > div.row > div.col-6')[1].contents[1].contents
+    sivrce = content.select('div.amenities > div.row > div.col-6')[0].contents
+    ketilmowyoba = content.select('div.amenities > div.row > div.col-6')[1].contents
 
 
     #print(ketilmowyoba)
@@ -137,12 +194,22 @@ def get_needed_info():
     Phone = 0
     TV = 0
     Furniture = 0
+    conditioner = 0
+
 
     try:
-        bedrooms = int(sivrce[3].text.split(' ')[1])
+        bdroom = content.select('div.main-features > div')[1]
+        bdrooms = bdroom.select('div > span.d-block')[0]
+        bedrooms = bdrooms.text
+        bedrooms = int(bedrooms)
+        #ipdb.set_trace()
+        #bdrm = driver.find_element(By.XPATH, "/html/body/div[7]/div/div[5]/div[4]/div[2]/div/span[1]")
+        #print(bdrm)
+        #bedrooms = int(sivrce[3].text.split(' ')[1])
     except:
         pass
-    mdgomareoba = sivrce[0].text
+
+    mdgomareoba = sivrce[1].contents[0].contents[1].contents[0].text
     try:
         home_high = float(sivrce[2].text.split(' ')[2])
     except:
@@ -153,9 +220,9 @@ def get_needed_info():
         except:
             bathrooms = int(sivrce[7].text[-42])
     except:
-    #    '''if not chosen will be empty str'''
-        #bathrooms = sivrce[7].text[-46:-40]
         pass
+    #    '''if not chosen will be empty str'''
+    #bathrooms = sivrce[7].text[-46:-40]
     try:
         LoggiaSize = int(sivrce[6].text.split(' მ')[0].split('\t')[-1])
     except:
@@ -179,80 +246,80 @@ def get_needed_info():
     except:
         pass
     try:
-        HotWater = ketilmowyoba[0].text.split('\t')[-1]
+        HotWater = ketilmowyoba[3].contents[1].contents[3].contents[3].text
     except:
         pass
     try:
-        gatboba = sivrce[8].text.split('\t')[-1]
+        gatboba = sivrce[3].contents[15].contents[3].contents[3].text
     except:
         pass
     try:
-        buxari = ketilmowyoba[3].text
-        if buxari == 'ბუხარი':
+        buxar = str(ketilmowyoba[3].contents[7].contents[3].contents[1]).split('"')[1]
+        if buxar == 'd-block no':
             buxari = 0
         else:
             buxari = 1
     except:
         pass
     try:
-        Gas = ketilmowyoba[1].text
-        if Gas == 'ბუნებრივი აირი':
+        Gasi = str(ketilmowyoba[3].contents[3].contents[3].contents[1]).split('"')[1]
+        if Gasi == 'd-block no':
             Gas = 0
         else:
             Gas = 1
     except:
         pass
     try:
-        ElevatorRegular = ketilmowyoba[5].text
-        if ElevatorRegular == 'სამგზავრო ლიფტი':
+        ElevatorRegulari = str(ketilmowyoba[3].contents[11].contents[3].contents[1]).split('"')[1]
+        if ElevatorRegulari == 'd-block no':
             ElevatorRegular = 0
         else:
             ElevatorRegular = 1
     except:
         pass
     try:
-        ElevatorBig = ketilmowyoba[6].text
-        if ElevatorBig == 'სატვირთო ლიფტი':
+        ElevatorBigi = str(ketilmowyoba[3].contents[13].contents[3].contents[1]).split('"')[1]
+        if ElevatorBigi == 'd-block no':
             ElevatorBig = 0
         else:
             ElevatorBig = 1
     except:
         pass
     try:
-        Internet = ketilmowyoba[2].text
-        if Internet == 'ინტერნეტი':
+        Interneti = str(ketilmowyoba[3].contents[5].contents[3].contents[1]).split('"')[1]
+        if Interneti == 'd-block no':
             Internet = 0
         else:
             Internet = 1
     except:
         pass
     try:
-        Phone = ketilmowyoba[7].text
-        if Phone == 'ტელეფონი':
+        Phonei = str(ketilmowyoba[3].contents[15].contents[3].contents[1]).split('"')[1]
+        if Phonei == 'd-block no':
             Phone = 0
         else:
             Phone = 1
     except:
         pass
     try:
-        TV = ketilmowyoba[8].text
-        if TV == 'ტელევიზორი':
+        TVi = str(ketilmowyoba[3].contents[17].contents[3].contents[1]).split('"')[1]
+        if TVi == 'd-block no':
             TV = 0
         else:
             TV = 1
     except:
         pass
     try:
-        conditioner = ketilmowyoba[9].text
-        if conditioner == 'კონდიციონერი':
+        conditioneri = str(ketilmowyoba[3].contents[19].contents[3].contents[1]).split('"')[1]
+        if conditioneri == 'd-block no':
             conditioner = 0
         else:
             conditioner = 1
     except:
         pass
     try:
-        Furniture = ketilmowyoba[4].text
-        if Furniture == 'ავეჯი':
+        Furniturei = str(ketilmowyoba[3].contents[9].contents[3].contents[1]).split('"')[1]
+        if Furniturei == 'd-blck no':
             Furniture = 0
         else:
             Furniture = 1
@@ -282,15 +349,17 @@ def get_needed_info():
         'address':address,
         'mdgomareoba':mdgomareoba,
         'home_high':home_high,
-        'total_price':frice,
+        'total_price':price,
         'total_rooms':otaxi,
         'current_floor':current_floor,
         'total_floors':total_floors,
         "apartment_area":needed_details
     }
     #print(current_dict)
-    return current_dict
+    #ipdb.set_trace()
 
+    return current_dict
+get_needed_info()
 
 #@app.route('/selenium')
 def selenium():
@@ -308,11 +377,23 @@ def selenium():
     time.sleep(1)
     return driver
 
+@app.route('/errorpage')
+def errorpage():
+    return 'error გთხოვთ მიმართოთ დეველოპერს'
 
-@app.route('/accept_cockies')
-def accept_cockies():
+@app.route('/refresh')
+def refresh():
+    #try:
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    dict = get_needed_info()
+    if dict == 0:
+        return redirect(url_for('errorpage'))
+    else:
+        pass
+    seet = string()
+
+
     chrome_options = webdriver.ChromeOptions()
     chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
     chrome_options.add_argument("--headless")
@@ -320,11 +401,8 @@ def accept_cockies():
     chrome_options.add_argument("--no-sandbox")
     driver = webdriver.Chrome(service=Service(executable_path=os.environ.get("CHROMEDRIVER_PATH")), options=chrome_options)
     time.sleep(2)
-    dict = get_needed_info()
-    seet = string()
-    time.sleep(2)
-
     name = "Flatz"
+    #get_content()
     #driver.maximize_window()
     time.sleep(3)
     driver.get("https://auth.my.ge/ka/?Continue=https%3A%2F%2Fwww.myhome.ge%2Fka%2F")
@@ -334,11 +412,8 @@ def accept_cockies():
     driver.find_element(By.XPATH, "//button[@class='btn btn-lg btn-full']").click()
     time.sleep(3)
     driver.get("https://www.myhome.ge/ka/my/addProduct")
-    #redirect(url_for(selenium))
-    #selenium()
-    #driver = selenium()
-    #dict = get_needed_info()
     time.sleep(3)
+
     driver.find_element(By.XPATH, "//button[@class='dropdown-toggle cursor-pointer d-flex align-items-center justify-content-between statement_button w-100 h-100']").click()
     time.sleep(3)
     driver.find_element(By.XPATH, "//label[@class='dropdown-item d-flex align-items-center']").click()
@@ -365,7 +440,7 @@ def accept_cockies():
     actions.move_to_element(element).perform()
     driver.find_element(By.ID, 'select2-ConditionID_1362-container').click()
     '''if ახალი გარემონტებული : -.-/li[2],  if  მიმდინარე რემონტი : -.-/li[3],
-     if თეთრი კარკასი : -.-/li[4]
+    if თეთრი კარკასი : -.-/li[4]
     if შავი კარკასი : -.-/li[5], if მწვანე კარკასი : -.-/li[6]'''
     driver.find_element(By.XPATH, '/html/body/span/span/span[2]/ul/li[2]').click()
     time.sleep(3)
@@ -412,13 +487,13 @@ def accept_cockies():
         driver.find_element(By.XPATH, '/html/body/span/span/span[2]/ul/li[' + str(dict['bathroom']+1) + ']').click()
     except:
         pass
-    ''' მისაღები, ფართი, აირჩიე ! '''
-    #driver.find_element(By.ID, 'LivingRoom_3484').click()
-    #driver.find_element(By.ID, 'LivingRoomM2_3485').send_keys(LivingRoom)
-    #driver.find_element(By.ID, 'select2-LivingRoomType_3486-container').click()
-    '''if გამოყოფილი :  -.-/li[2], if სტუდიო : -.-/li[3]'''
-    #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
-    '''ლოჯი, ფართი'''
+        ''' მისაღები, ფართი, აირჩიე ! '''
+        #driver.find_element(By.ID, 'LivingRoom_3484').click()
+        #driver.find_element(By.ID, 'LivingRoomM2_3485').send_keys(LivingRoom)
+        #driver.find_element(By.ID, 'select2-LivingRoomType_3486-container').click()
+        '''if გამოყოფილი :  -.-/li[2], if სტუდიო : -.-/li[3]'''
+        #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
+        '''ლოჯი, ფართი'''
     if dict['LoggiaSize'] > 0:
         driver.find_element(By.ID, 'LoggiaSize_360').send_keys(dict['LoggiaSize'])
         driver.find_element(By.ID, 'Loggia_347').click()
@@ -428,10 +503,10 @@ def accept_cockies():
     if dict['BalconySize'] > 0:
         driver.find_element(By.ID, 'Balcony_348').click()
         driver.find_element(By.ID, 'BalconySize_361').send_keys(dict['BalconySize'])
-    #driver.find_element(By.ID, 'select2-BalconyType_362-container').click()
-    '''if ღია : -.-/li[2], if დახურული : -.-/li[3]'''
-    #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
-    '''ვერანდა, ფართი'''
+        #driver.find_element(By.ID, 'select2-BalconyType_362-container').click()
+        '''if ღია : -.-/li[2], if დახურული : -.-/li[3]'''
+        #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
+        '''ვერანდა, ფართი'''
     if dict['VerandaSize'] > 0:
         driver.find_element(By.ID, 'Veranda_349').click()
         driver.find_element(By.ID, 'VerandaSize_365').send_keys(dict['VerandaSize'])
@@ -456,7 +531,7 @@ def accept_cockies():
         driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[' + str(x) + ']').click()
     else:
         pass
-    '''პარკინგი - აირჩიე'''
+        '''პარკინგი - აირჩიე'''
     if dict['Parking'] != 0:
         if dict['Parking'] == 'ეზოს პარკინგი':
             x = 1-1
@@ -478,11 +553,11 @@ def accept_cockies():
         driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[' + str(x) + ']').click()
     else:
         pass
-    '''აუზი - აირჩიე'''
-    #driver.find_element(By.ID, 'select2-PoolType_372-container').click()
-    #ღია, დახურული
-    #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
-    '''ცხელი წყალი - აირჩიე'''
+        '''აუზი - აირჩიე'''
+        #driver.find_element(By.ID, 'select2-PoolType_372-container').click()
+        #ღია, დახურული
+        #driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[2]').click()
+        '''ცხელი წყალი - აირჩიე'''
     if dict['HotWater'] != 0:
         driver.find_element(By.ID, 'select2-HotWaterID_391-container').click()
         time.sleep(1)
@@ -501,7 +576,7 @@ def accept_cockies():
         driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[' + str(x) + ']').click()
     else:
         pass
-    '''გათბობა - აირჩიე'''
+        '''გათბობა - აირჩიე'''
     if dict['gatboba'] != 0:
         driver.find_element(By.ID, 'select2-WarmingID_595-container').click()
         if dict['gatboba'] == 'ცენტრალური გათბობა':
@@ -516,29 +591,29 @@ def accept_cockies():
         driver.find_element(By.XPATH, 'html/body/span/span/span[2]/ul/li[' + str(x) + ']').click()
     else:
         pass
-    '''ბუხარი'''
+        '''ბუხარი'''
     if dict['buxari'] != 0:
         driver.find_element(By.ID, 'FirePlace_351').click()
     else:
         pass
-    ''' ბუნებრივი აირი'''
+        ''' ბუნებრივი აირი'''
     if dict['Gas'] != 0:
         driver.find_element(By.ID, 'Gas_382').click()
     else:
         pass
-    '''სიგნალიზაცია'''
-    #driver.find_element(By.ID, 'Alarm_578').click()
-    '''სამგზავრო ლიფტი'''
+        '''სიგნალიზაცია'''
+        #driver.find_element(By.ID, 'Alarm_578').click()
+        '''სამგზავრო ლიფტი'''
     if dict['ElevatorRegular'] != 0:
         driver.find_element(By.ID, 'Elevator1_579').click()
     else:
         pass
-    '''სატვირთო ლიფტი'''
+        '''სატვირთო ლიფტი'''
     if dict['ElevatorBig'] != 0:
         driver.find_element(By.ID, 'Elevator2_580').click()
     else:
         pass
-    '''ინტერნეტი'''
+        '''ინტერნეტი'''
     if dict['Internet'] != 0:
         driver.find_element(By.ID, 'Internet_661').click()
     else:
@@ -587,13 +662,13 @@ def accept_cockies():
         driver.find_element(By.ID, 'TV_388').click()
     else:
         pass
-    '''კონდიციონერი'''
+        '''კონდიციონერი'''
     if dict['conditioner'] != 0:
         driver.find_element(By.ID, 'Conditioner_389').click()
     else:
         pass
-    '''მაცივარი'''
-#    driver.find_element(By.ID, 'Refrigerator_599').click()
+        '''მაცივარი'''
+    #driver.find_element(By.ID, 'Refrigerator_599').click()
     '''სარეცხი მანქანა'''
     #driver.find_element(By.ID, 'WashingMachine_600').click()
     '''ჭურჭლის სარეცხი მანქანა'''
@@ -619,8 +694,33 @@ def accept_cockies():
     driver.find_element(By.XPATH, "//label[@for='payBalance']").click()
     driver.find_element(By.ID, "paymentButton").click()
     time.sleep(3)
-    driver.quit()
-    return redirect(url_for('index1'))
+    connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+    sql = "DELETE FROM Phonebookk LIMIT 1"
+    cursor = connection.cursor()
+    cursor.execute(sql)
+    connection.commit()
+    query1 = "SELECT * from Phonebookk"
+    result = cursor.execute(query1)
+    result = result.fetchall()
+    if len(result) > 0:
+        driver.get("https://martivad.herokuapp.com/refresh")
+        time.sleep(2)
+        driver.quit()
+    else:
+        driver.quit()
+    return "done"
+    #except:
+    #return 'done'
+    #return "error"
+
+@app.route('/while_loop')
+def while_loop():
+    connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+    cursor = connection.cursor()
+    query1 = "SELECT * from Phonebookk"
+    result = cursor.execute(query1)
+    result = result.fetchall()
+    return redirect(url_for('refresh'))
 
 
 @app.route('/cong',  methods=['GET', 'POST'])
@@ -644,26 +744,98 @@ def index1():
         </form>
     '''
 
+@app.route('/page', methods = ['GET'])
+def page():
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'}
+    WEBSITE_URL = 'https://www.myhome.ge/ka/'
+    #'https://www.imdb.com/chart/top/?ref_=nv_mv_250'
+    try:
+        #headers = {"User-Agent": "Mozilla/5.0 (X11; CrOS x86_64 12871.102.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.141 Safari/537.36"}
+        response = str(requests.get(WEBSITE_URL, headers=headers))
+        #, headers=headers, allow_redirects=False)
+    except:
+        response = 'ERR 0 R'
+    return 'hi!!!!!this is response ---> ' +  str(response)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     if request.method == 'POST':
-        session['url'] = request.form['url']
-        return redirect(url_for('accept_cockies'))
-            #return redirect(url_for('index'))
-    return 'გთხოვთ შეიყვანოთ განცხადების ლინკი'+'''
+        name = request.form["username"]
+        connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+        cursor = connection.cursor()
+        query1 = "SELECT * from Phonebookk"
+        result = cursor.execute(query1)
+        result = result.fetchall()
+        if len(result) == 0:
+            query1 = "INSERT INTO Phonebookk VALUES('{n}')".format(n = name)
+            cursor.execute(query1)
+            connection.commit()
+            #return str(get_content())
+            #return redirect(url_for('resultpage'))
+            return redirect(url_for('refresh'))
+        else:
+            query1 = "INSERT INTO Phonebookk VALUES('{n}')".format(n = name)
+            cursor.execute(query1)
+            connection.commit()
+            return redirect(url_for('resultpage'))
+    return 'gtxovt sheiyvanot gancxadebis linki'+'''
         <form method="post">
-            <p><input type=text name=url>
+            <p><input type=text name=username>
             <p>
             <p><input type=submit value=Go>
         </form>
     '''
 
-@app.route('/some')
-def some():
-    return str(session['url'])
+@app.route('/resultpage', methods = ['GET', 'POST'])
+def resultpage():
+    connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+    cursor = connection.cursor()
+    query1 = "SELECT * from Phonebookk"
+    result = cursor.execute(query1)
+    result = result.fetchall()
+    if request.method == "POST":
+        return redirect(url_for('index'))
+    return "tqveni rigis nomeria : " + str(len(result))+" This is your data ---->"+ str(result) +'''
+        <form method="post">
 
+            <p><input type=submit value=Okay>
+        </form>
+    '''
+
+
+@app.route('/delete', methods = ['GET', "POST"])
+def delete():
+    try:
+        connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+        cursor = connection.cursor()
+        query1 = "SELECT * from Phonebookk"
+        result = cursor.execute(query1)
+    except:
+        result = 'NOTHING TO DELETE!'
+    try:
+        result = result.fetchall()[0][0]
+    except:
+        result = result.fetchall()
+    if request.method == "POST":
+        name = request.form["NEW"]
+        connection = sqlite3.connect(str(os.getcwd()) + "/phonebook.db")
+        sql = "DELETE FROM Phonebookk LIMIT 1"
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        connection.commit()
+        return redirect(url_for('delete'))
+    return  'want to delete? here is data ----> '+ result + '''
+        <form method="post">
+            <p><input type=text name=NEW>
+            <p>
+            <p><input type=submit value=SURE>
+        </form>
+    '''
+
+@app.route('/gogo')
+def gogo():
+    return get_content()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -683,31 +855,3 @@ def logout():
     # remove the username from the session if it's there
     session.pop('username', None)
     return redirect(url_for('login'))
-
-
-
-
-
-'''
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        return do_the_login()
-    else:
-        return show_the_login_form()
-
-'''
-'''
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        if valid_login(request.form['username'],
-                       request.form['password']):
-            return log_the_user_in(request.form['username'])
-        else:
-            error = 'Invalid username/password'
-    # the code below is executed if the request method
-    # was GET or the credentials were invalid
-    return render_template('login.html', error=error)
-'''
